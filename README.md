@@ -2,7 +2,7 @@
 
 A desktop application that measures how hard a piece of writing is to read.
 
-Open a text file and it reports the standard readability scores (Flesch Reading Ease, Flesch-Kincaid grade level, and the Gunning Fog index) along with word, sentence, syllable, and unique-word counts. It can also show the document with each word colored by its part of speech, or split into syllables.
+Open a text file and it reports the standard readability scores (Flesch Reading Ease, Flesch-Kincaid grade level, and the Gunning Fog index) along with word, sentence, syllable, and unique-word counts. A checkbox toggles the text between plain view and an HTML rendering colored by part of speech. The syllable-split view is computed by the same engine and exercised by the console demo and test suite, though the GUI doesn't currently expose a toggle for it.
 
 Written in C++17 with Qt 6. Tokenization runs on a thread pool so large files stay fast, and all file loading happens off the UI thread so the window never freezes.
 
