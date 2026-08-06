@@ -34,11 +34,12 @@ public slots:
     void onHtmlReady();
     void onDocumentLoadDone();
     void onHtmlToggle(int state);
-private: 
+private:
 	QThread* workerThread;
     QTextEdit* textArea;
     QCheckBox* htmlCheck;
- 
+    QLabel* fileNameLabel;
+
     QLabel* pcharcount;
     QLabel* pwordcount;
     QLabel* puniquewords;

@@ -3,13 +3,44 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
+#include <QFrame>
 #include <QFont>
 #include <QCheckBox>
+#include <QFileInfo>
+
+namespace {
+
+// A small "stat card": a caption on top, a bold value underneath, inside a
+// bordered panel. Returns the value label so callers can update it later.
+QLabel* addStatCard(QGridLayout* grid, int row, int col, const QString& caption, const QString& objectName) {
+    QFrame* card = new QFrame();
+    card->setObjectName("StatCard");
+
+    QVBoxLayout* cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(14, 10, 14, 10);
+    cardLayout->setSpacing(2);
+
+    QLabel* captionLabel = new QLabel(caption);
+    captionLabel->setObjectName("StatCaption");
+
+    QLabel* valueLabel = new QLabel("—");
+    valueLabel->setObjectName(objectName);
+    valueLabel->setProperty("statValue", true);
+
+    cardLayout->addWidget(captionLabel);
+    cardLayout->addWidget(valueLabel);
+
+    grid->addWidget(card, row, col);
+    return valueLabel;
+}
+
+} // namespace
 
 DocumentWindow::DocumentWindow(QWidget* parent) : QWidget(parent), pDW(nullptr), workerThread(nullptr) {
     buildUI();
 
-     // Creating a worker and thread
+    // Creating a worker and thread
     workerThread = new QThread(this);
     pDW = new DocumentWorker();
     pDW->moveToThread(workerThread);
@@ -28,12 +59,10 @@ DocumentWindow::DocumentWindow(QWidget* parent) : QWidget(parent), pDW(nullptr),
 DocumentWindow::DocumentWindow(QWidget* parent, QString filePath) : QWidget(parent), pDW(nullptr), workerThread(nullptr) {
     buildUI();
 
-     // Creating a worker and thread
     workerThread = new QThread(this);
     pDW = new DocumentWorker();
     pDW->moveToThread(workerThread);
 
-    // signals connected
     connect(this, &DocumentWindow::startLoad, pDW, &DocumentWorker::startLoad);
     connect(pDW, &DocumentWorker::contentsReady, this, &DocumentWindow::onContentsReady);
     connect(pDW, &DocumentWorker::statsReady, this, &DocumentWindow::onStatsReady);
@@ -49,12 +78,10 @@ DocumentWindow::DocumentWindow(QWidget* parent, QString filePath) : QWidget(pare
 DocumentWindow::DocumentWindow(QString filePath, QWidget* parent) : QWidget(parent), pDW(nullptr), workerThread(nullptr) {
     buildUI();
 
-     // Creating a worker and thread
     workerThread = new QThread(this);
     pDW = new DocumentWorker();
     pDW->moveToThread(workerThread);
 
-    // signals connected
     connect(this, &DocumentWindow::startLoad, pDW, &DocumentWorker::startLoad);
     connect(pDW, &DocumentWorker::contentsReady, this, &DocumentWindow::onContentsReady);
     connect(pDW, &DocumentWorker::statsReady, this, &DocumentWindow::onStatsReady);
@@ -78,69 +105,71 @@ void DocumentWindow::buildUI() {
     this->setObjectName("DocumentWindow");
     setWindowFlags(Qt::Window);
     setAttribute(Qt::WA_DeleteOnClose);
-    resize(800, 600);
+    resize(760, 640);
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    QVBoxLayout* outer = new QVBoxLayout(this);
+    outer->setContentsMargins(20, 18, 20, 18);
+    outer->setSpacing(14);
 
-    //r1 with char count, word count, and syllable count
-    QHBoxLayout* row1 = new QHBoxLayout();
-    pcharcount = new QLabel("---"); pcharcount->setObjectName("CharCount");
-    pwordcount = new QLabel("---"); pwordcount->setObjectName("WordCount");
-        puniquewords = new QLabel("---"); puniquewords->setObjectName("UniqueWords");
-        psyllablecount = new QLabel("---"); psyllablecount->setObjectName("SyllableCount");
-        psentences = new QLabel("---"); psentences->setObjectName("Sentences");
+    // --- Header: filename + HTML toggle ---
+    QHBoxLayout* header = new QHBoxLayout();
+    fileNameLabel = new QLabel("—");
+    fileNameLabel->setObjectName("FileNameLabel");
+    fileNameLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
-    row1->addWidget(new QLabel("chars:")); row1->addWidget(pcharcount); row1->addStretch();
-    row1->addWidget(new QLabel("words:")); row1->addWidget(pwordcount); row1->addStretch();
-    row1->addWidget(new QLabel("unique Words:")); row1->addWidget(puniquewords); row1->addStretch();
-    row1->addWidget(new QLabel("syllables:")); row1->addWidget(psyllablecount); row1->addStretch();
-    row1->addWidget(new QLabel("sentences:")); row1->addWidget(psentences);
-
-    //r2 reading ease, FK grade, GF grade
-        QHBoxLayout* row2 = new QHBoxLayout();
-         phardwords = new QLabel("---"); phardwords->setObjectName("HardWords");
-        preadingease = new QLabel("---"); preadingease->setObjectName("ReadingEase");
-        pfklevel = new QLabel("---"); pfklevel->setObjectName("FKLevel");
-        pgflevel = new QLabel("---"); pgflevel->setObjectName("GFLevel");
-
-    htmlCheck = new QCheckBox("HTML output");
+    htmlCheck = new QCheckBox("Colorize by part of speech");
     htmlCheck->setObjectName("HTMLCheck");
     htmlCheck->setChecked(false);
     htmlCheck->setVisible(false);
 
-    row2->addWidget(new QLabel("hard words:")); row2->addWidget(phardwords); row2->addStretch();
-    row2->addWidget(new QLabel("reading ease:")); row2->addWidget(preadingease); row2->addStretch();
-    row2->addWidget(new QLabel("F-K grade level:")); row2->addWidget(pfklevel); row2->addStretch();
-    row2->addWidget(new QLabel("G-F grade level:")); row2->addWidget(pgflevel); row2->addStretch();
-    row2->addWidget(htmlCheck);
+    header->addWidget(fileNameLabel, 1);
+    header->addWidget(htmlCheck, 0, Qt::AlignRight);
+    outer->addLayout(header);
 
-    layout->addLayout(row1);
-    layout->addLayout(row2);
+    // --- Stats grid: a 3x3 wall of stat cards ---
+    QGridLayout* statsGrid = new QGridLayout();
+    statsGrid->setSpacing(10);
+    for (int c = 0; c < 3; c++) statsGrid->setColumnStretch(c, 1);
 
-    //Text area
+    pcharcount     = addStatCard(statsGrid, 0, 0, "Characters", "CharCount");
+    pwordcount     = addStatCard(statsGrid, 0, 1, "Words", "WordCount");
+    puniquewords   = addStatCard(statsGrid, 0, 2, "Unique Words", "UniqueWords");
+
+    psyllablecount = addStatCard(statsGrid, 1, 0, "Syllables", "SyllableCount");
+    psentences     = addStatCard(statsGrid, 1, 1, "Sentences", "Sentences");
+    phardwords     = addStatCard(statsGrid, 1, 2, "Hard Words", "HardWords");
+
+    preadingease   = addStatCard(statsGrid, 2, 0, "Reading Ease", "ReadingEase");
+    pfklevel       = addStatCard(statsGrid, 2, 1, "F-K Grade Level", "FKLevel");
+    pgflevel       = addStatCard(statsGrid, 2, 2, "Gunning Fog", "GFLevel");
+
+    outer->addLayout(statsGrid);
+
+    // --- Document text ---
     textArea = new QTextEdit(this);
+    textArea->setObjectName("TextArea");
     textArea->setReadOnly(true);
-    textArea->setFont(QFont("Times New Roman", 11));
-    layout->addWidget(textArea);
+    textArea->setFont(QFont("Georgia", 12));
+    outer->addWidget(textArea, 1);
 
     connect(htmlCheck, &QCheckBox::stateChanged, this, &DocumentWindow::onHtmlToggle);
 }
 
 bool DocumentWindow::load(QString filename) {
-    this->setWindowTitle(filename);
+    this->setWindowTitle(QFileInfo(filename).fileName());
+    fileNameLabel->setText(filename);
 
-   
     emit startLoad(filename);
     return true;
 }
 
 void DocumentWindow::onContentsReady(QString contents) {
     textArea->setPlainText(contents);
-        Document* doc = pDW->getDocument();
+    Document* doc = pDW->getDocument();
     pcharcount->setText(QString::number(doc->getrawcontent().size()));
 }
 
-    void DocumentWindow::onStatsReady() {
+void DocumentWindow::onStatsReady() {
     Document* doc = pDW->getDocument();
     pwordcount->setText(QString::number((int)doc->numtokens()));
     puniquewords->setText(QString::number(doc->numuniquewords()));
@@ -153,19 +182,18 @@ void DocumentWindow::onContentsReady(QString contents) {
 }
 
 void DocumentWindow::onHtmlReady() {
-        htmlCheck->setVisible(true);
+    htmlCheck->setVisible(true);
 }
 
 void DocumentWindow::onDocumentLoadDone() {
 }
 
-
 void DocumentWindow::onHtmlToggle(int state) {
     if (state == Qt::Checked) {
-         Document* doc = pDW->getDocument();
+        Document* doc = pDW->getDocument();
         textArea->setHtml(QString::fromStdString(doc->getHTML()));
     } else {
         Document* doc = pDW->getDocument();
-         textArea->setPlainText(QString::fromStdString(doc->getrawcontent()));
+        textArea->setPlainText(QString::fromStdString(doc->getrawcontent()));
     }
 }

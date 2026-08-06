@@ -24,7 +24,7 @@ Each word is looked up in a lexicon of about 74,000 English words to get its par
 
 ## Using it
 
-The application opens with a file browser. Double-click a text file and it opens in its own window with the text, a statistics panel, and a checkbox that switches between plain text and the part-of-speech colorized view.
+The application opens with a file browser. Click a text file and it opens in its own window with the text, a grid of stat cards, and a checkbox that switches between plain text and the part-of-speech colorized view.
 
 Statistics fill in as they are computed rather than all at once, so even a multi-megabyte file stays responsive while it loads.
 
