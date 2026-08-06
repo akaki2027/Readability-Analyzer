@@ -1,0 +1,44 @@
+# Build output
+build/
+out/
+Debug/
+Release/
+x64/
+*.dir/
+*_autogen/
+*.exe
+*.obj
+*.pdb
+
+# CMake
+CMakeFiles/
+CMakeCache*
+cmake_install*
+CMakePresets.json
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
+ALL_BUILD*
+ZERO_CHECK*
+*.vcxproj
+*.vcxproj.filters
+*.sln
+
+# IDE
+.vs/
+.qt/
+
+# Generated documentation
+html/
+latex/
+AdityaKaki_html.zip
+
+# Superseded source files
+Lexicon.h
+ProjectTest.hpp
+testproject.cpp
+
+# Reference PDFs, not redistributed
+*.pdf
+
+# In-copyright sample text
+text/thehobbit.txt
